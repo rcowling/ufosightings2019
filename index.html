@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8' />
+    <title>UFO Sightings 2019 Heatmap</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <script src="https://code.jquery.com/jquery-3.3.1.js" integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+crossorigin="anonymous"></script>
+    <script src='https://api.tiles.mapbox.com/mapbox-gl-js/v0.50.0/mapbox-gl.js'></script>
+    <link href='https://api.tiles.mapbox.com/mapbox-gl-js/v0.50.0/mapbox-gl.css' rel='stylesheet' />
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+</head>
+<body>
+<style>
+.map-overlay {
+    font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+    position: absolute;
+    width: 25%;
+    top: 0;
+    left: 0;
+    padding: 10px;
+    color: #6EE303
+}
+
+.map-overlay .map-overlay-inner {
+    background-color: rgba(0, 0, 0, 0.90);;
+    box-shadow:0 1px 2px rgba(0, 0, 0, 0.20);
+    border-radius: 3px;
+    padding: 10px;    
+    margin-bottom: 10px;
+}
+
+.map-overlay h2 {
+    line-height: 24px;
+    display: block;
+    margin: 0 0 10px;
+}
+
+.map-overlay .legend .bar {
+    height: 10px;
+    width: 100%;
+    background: linear-gradient(to right, #1c890a, #beea1f, #e6f2b1);
+}
+
+.map-overlay input {
+    background-color: transparent;
+    display: inline-block;
+    width: 100%;
+    position: relative;
+    margin: 0;
+    cursor: ew-resize;
+}
+#menu {
+background: #fff;
+position: absolute;
+z-index: 1;
+top: 10px;
+right: 10px;
+border-radius: 3px;
+width: 120px;
+border: 1px solid rgba(0, 0, 0, 0.4);
+font-family: 'Open Sans', sans-serif;
+}
+ 
+#menu a {
+font-size: 13px;
+color: #404040;
+display: block;
+margin: 0;
+padding: 0;
+padding: 10px;
+text-decoration: none;
+border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+text-align: center;
+}
+ 
+#menu a:last-child {
+border: none;
+}
+ 
+#menu a:hover {
+background-color: black;
+color: #404040;
+}
+ 
+#menu a.active {
+background-color: black;
+color: #6EE303;
+}
+ 
+#menu a.active:hover {
+background: black;
+}
+</style>
+
+
+<div id='map'></div>
+<nav id="menu"></nav>    
+<div class='map-overlay top'>    
+    <div class='map-overlay-inner'>
+        <h2>UFO Sightings 2019</h2>
+        <div id='legend' class='legend'>
+            <div class='bar'></div>
+            <div id="few" style="display: inline-block">few sightings</div><div id='many' style="float: right; display:inline-block;">many sightings</div>
+        </div>
+        
+        <select id="shape" onchange="filterShapes();">
+          <option value="" disabled selected hidden>Filter by Shape</option>  
+          <option value="Changing">Changing</option>
+          <option value="Chevron">Chevron</option>
+          <option value="Cigar">Cigar</option>
+          <option value="Circle">Circle</option>
+          <option value="Cone">Cone</option>
+          <option value="Cross">Cross</option>
+          <option value="Cylinder">Cylinder</option>
+          <option value="Diamond">Diamond</option>
+          <option value="Disk">Disk</option>
+          <option value="Egg">Egg</option>
+          <option value="Fireball">Fireball</option>
+          <option value="Flash">Flash</option>
+          <option value="Formation">Formation</option>
+          <option value="Light">Light</option>
+          <option value="Other">Other</option>
+          <option value="Oval">Oval</option>
+          <option value="Rectangle">Rectangle</option>
+          <option value="Sphere">Sphere</option>
+          <option value="Teardrop">Teardrop</option>
+          <option value="Triangle">Triangle</option>
+          <option value="Unknown">Unknown</option>  
+        </select>
+        <p>Data Sources: NUFORC, ESRI, U.S. DoD</p> 
+        <p>Map created by Bob Cowling</p>
+    </div>
+</div>    
+
+<script src='//d3js.org/d3.v3.min.js' charset='utf-8'></script>
+<script>
+mapboxgl.accessToken = 'pk.eyJ1IjoicmNvd2xpbmciLCJhIjoiY2lzZ2YwcjZtMDFwdzNvcnQ3bmR3NXFhcCJ9.TI01a_YqNaqKWigFu70x7w';
+var map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v9',
+    center: [-98.5795, 39.8283],
+    zoom: 3.5
+});
+
+function filterShapes () {
+    var shape_val = $("#shape").val();
+    map.setFilter('ufosightings', ["==", ['get','Shape'], shape_val]);
+    map.setFilter('sightings-point', ["==", ['get','Shape'], shape_val]);
+}
+// Add zoom and rotation controls to the map.
+var nav = new mapboxgl.NavigationControl(); 
+map.addControl(nav, 'bottom-right');
+    
+/*var months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December'
+];
+    
+function filterBy(month) {
+
+    var filters = ['==', 'Date', month];
+    map.setFilter('earthquakes-point', filters);
+    map.setFilter('earthquakes-heat', filters);
+
+    // Set the label to the month
+    document.getElementById('month').textContent = months[month];
+}    */
+
+map.on('load', function() {
+    
+    d3.json('sightings.geojson', function(err, data) {
+        if (err) throw err;
+
+        // Create a month property value based on time
+        // used to filter against.
+        data.features = data.features.map(function(d) {
+            d.properties.Date = new Date(d.properties.Date).getMonth();
+            return d;
+        });
+    
+    // Add a geojson point source.
+    // Heatmap layers also work with a vector tile source.
+    map.addSource('sightings', {
+        "type": "geojson",
+        "data": data
+    });
+         
+
+    map.addLayer({
+        "id": "ufosightings",
+        "type": "heatmap",
+        "source": "sightings",
+        "maxzoom": 15,
+        "paint": {
+            // Increase the heatmap weight based on frequency and property magnitude
+            "heatmap-weight": [
+                "interpolate",
+                ["linear"],
+                ["get", "txtListingDaysOnMarket"],
+                0, 0,
+                6, 1
+            ],
+            // Increase the heatmap color weight weight by zoom level
+            // heatmap-intensity is a multiplier on top of heatmap-weight
+            "heatmap-intensity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0, 1,
+                9, 3
+            ],
+            // Color ramp for heatmap.  Domain is 0 (low) to 1 (high).
+            // Begin color ramp at 0-stop with a 0-transparancy color
+            // to create a blur-like effect.
+            "heatmap-color": [
+                "interpolate",
+                ["linear"],
+                ["heatmap-density"],
+                 0, "rgba(33,102,172,0)",
+                0.2, "#1c890a",
+                
+                0.8, "#beea1f",
+                
+                1, "#e6f2b1"
+               /* 0, "rgba(33,102,172,0)",
+                0.1, "#6EE303",
+                0.2, "#0582E3",
+                
+                
+                0.4, "#0AE28C",
+                0.6, "#3FE10F",
+                0.8, "#98D743",
+                1, "#E0D415"*/
+            ],
+            // Adjust the heatmap radius by zoom level
+            "heatmap-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                0, 10,
+                9, 20
+            ],
+            // Transition from heatmap to circle layer by zoom level
+            "heatmap-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7, 1,
+                9, 0
+            ],
+        }
+    }, 'waterway-label');
+
+    map.addLayer({
+        "id": "sightings-point",
+        "type": "circle",
+        "source": "sightings",
+        "minzoom": 7,
+        "paint": {
+            // Size circle radius by earthquake magnitude and zoom level
+            "circle-radius": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7, [
+                    "interpolate",
+                    ["linear"],
+                    ["get", "txtListingDaysOnMarket"],
+                    1, 1,
+                    6, 4
+                ],
+                16, [
+                    "interpolate",
+                    ["linear"],
+                    ["get", "txtListingDaysOnMarket"],
+                    1, 5,
+                    6, 50
+                ]
+            ],
+            // Color circle by earthquake magnitude
+            "circle-color": [
+                "interpolate",
+                ["linear"],
+                ["get", "txtListingDaysOnMarket"],
+                 1, "rgba(33,102,172,0)",
+                 2, "rgb(103,169,207)",
+                 3, "rgb(209,229,240)",
+                 4, "rgb(253,219,199)",
+                 5, "rgb(239,138,98)",
+                 6, "rgb(178,24,43)"
+            ],
+            "circle-stroke-color": "white",
+            "circle-stroke-width": 1,
+            // Transition from heatmap to circle layer by zoom level
+            "circle-opacity": [
+                "interpolate",
+                ["linear"],
+                ["zoom"],
+                7, 0,
+                8, 1
+            ]
+        }
+    }, 'waterway-label');
+
+    map.addSource('facilities', { type: 'geojson', data: 'nuclearplants.geojson' }); 
+
+    map.addLayer({
+        id: "Nuclear Plants",
+        type: "circle",
+        source: "facilities",
+        'layout': {
+            'visibility': 'none'
+        },
+        paint: {
+        "circle-color": "red",
+        "circle-radius": 5,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
+        }
+    }); 
+
+    map.addSource('bases', { type: 'geojson', data: 'military_locations.geojson' }); 
+    
+    map.addLayer({
+        id: "Military Bases",
+        type: "circle",
+        source: "bases",
+        'layout': {
+            'visibility': 'none'
+        },
+        paint: {
+        "circle-color": "orange",
+        "circle-radius": 5,
+        "circle-stroke-width": 1,
+        "circle-stroke-color": "#fff"
+        }
+    });       
+        
+        // Set filter to first month of the year
+        // 0 = January
+        //filterBy(0);
+
+        /*document.getElementById('slider').addEventListener('input', function(e) {
+            var month = parseInt(e.target.value, 10);
+            filterBy(month);
+        });*/
+    });
+// enumerate ids of the layers
+var toggleableLayerIds = ['Military Bases', 'Nuclear Plants'];
+ 
+// set up the corresponding toggle button for each layer
+for (var i = 0; i < toggleableLayerIds.length; i++) {
+var id = toggleableLayerIds[i];
+ 
+var link = document.createElement('a');
+link.href = '#';
+//link.className = 'active';
+link.textContent = id;
+ 
+link.onclick = function(e) {
+var clickedLayer = this.textContent;
+e.preventDefault();
+e.stopPropagation();
+ 
+var visibility = map.getLayoutProperty(clickedLayer, 'visibility');
+ 
+// toggle layer visibility by changing the layout object's visibility property
+if (visibility === 'visible') {
+map.setLayoutProperty(clickedLayer, 'visibility', 'none');
+this.className = '';
+} else {
+this.className = 'active';
+map.setLayoutProperty(clickedLayer, 'visibility', 'visible');
+}
+};
+ 
+var layers = document.getElementById('menu');
+layers.appendChild(link);
+}
+
+});
+</script>
+
+</body>
+</html>
